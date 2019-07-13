@@ -34,6 +34,11 @@ class MultiSigTransaction extends txnBuilder.Transaction {
             txn.name = "Transaction";
             txn.tag = Buffer.from([84, 88]); // "TX"
 
+            // Add the sender pubkey for keyreg txs
+            if (txnForEnc.type === 'keyreg') {
+                txn.from = address.decode(address.encode(new Uint8Array(txnForEnc.snd)));
+            }
+
             txn.objForEncoding = txnForEnc;
             return txn;
         }
