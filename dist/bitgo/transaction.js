@@ -28,17 +28,19 @@ class Transaction {
     note,
     genesisID,
     genesisHash,
-    closeRemainderTo
+    closeRemainderTo,
+    type = "pay",
+    nonParticipation = false
   }) {
     this.name = "Transaction";
     this.tag = Buffer.from([84, 88]); // "TX"
 
     from = address.decode(from);
-    to = address.decode(to);
+    if (to !== undefined) to = address.decode(to);
     if (closeRemainderTo !== undefined) closeRemainderTo = address.decode(closeRemainderTo);
     if (genesisHash === undefined) throw Error("genesis hash must be specified and in a base64 string.");
     genesisHash = Buffer.from(genesisHash, 'base64');
-    if (!Number.isSafeInteger(amount) || amount < 0) throw Error("Amount must be a positive number and smaller than 2^53-1");
+    if (amount !== undefined && (!Number.isSafeInteger(amount) || amount < 0)) throw Error("Amount must be a positive number and smaller than 2^53-1");
     if (!Number.isSafeInteger(fee) || fee < 0) throw Error("fee must be a positive number and smaller than 2^53-1");
     if (!Number.isSafeInteger(firstRound) || firstRound < 0) throw Error("firstRound must be a positive number");
     if (!Number.isSafeInteger(lastRound) || lastRound < 0) throw Error("lastRound must be a positive number");
@@ -57,7 +59,9 @@ class Transaction {
       note,
       genesisHash,
       genesisID,
-      closeRemainderTo
+      closeRemainderTo,
+      type,
+      nonParticipation
     }); // Modify Fee
 
     this.fee *= this.estimateSize(); // If suggested fee too small and will be rejected, set to min tx fee
@@ -69,24 +73,30 @@ class Transaction {
 
   get_obj_for_encoding() {
     let txn = {
-      "amt": this.amount,
       "fee": this.fee,
       "fv": this.firstRound,
       "lv": this.lastRound,
-      "note": Buffer.from(this.note),
-      "rcv": Buffer.from(this.to.publicKey),
       "snd": Buffer.from(this.from.publicKey),
-      "type": "pay",
+      "type": this.type,
       "gen": this.genesisID,
       "gh": this.genesisHash
-    }; // parse close address
+    };
+    if (!txn.type) txn.type = "pay";
+    if (this.amount) txn.amt = this.amount;
+    if (this.note) txn.note = Buffer.from(this.note);
+    if (this.to) txn.rcv = Buffer.from(this.to.publicKey); // parse close address
 
     if (this.closeRemainderTo !== undefined) txn.close = Buffer.from(this.closeRemainderTo.publicKey); // allowed zero values
 
-    if (!txn.note.length) delete txn.note;
+    if (txn.note && !txn.note.length) delete txn.note;
     if (!txn.amt) delete txn.amt;
     if (!txn.fee) delete txn.fee;
     if (!txn.gen) delete txn.gen;
+
+    if (this.nonParticipation) {
+      txn.nonpart = true;
+    }
+
     return txn;
   }
 
@@ -99,12 +109,13 @@ class Transaction {
     txn.fee = txnForEnc.fee;
     txn.firstRound = txnForEnc.fv;
     txn.lastRound = txnForEnc.lv;
-    txn.note = new Uint8Array(txnForEnc.note);
-    txn.to = address.decode(address.encode(new Uint8Array(txnForEnc.rcv)));
+    if (txnForEnc.note) txn.note = new Uint8Array(txnForEnc.note);
+    if (txnForEnc.rcv) txn.to = address.decode(address.encode(new Uint8Array(txnForEnc.rcv)));
     txn.from = address.decode(address.encode(new Uint8Array(txnForEnc.snd)));
     if (txnForEnc.close !== undefined) txn.closeRemainderTo = address.decode(address.encode(new Uint8Array(txnForEnc.close)));
     txn.genesisID = txnForEnc.gen;
     txn.genesisHash = txnForEnc.gh;
+    txn.nonParticipation = txnForEnc.nonpart;
     return txn;
   }
 
