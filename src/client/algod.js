@@ -1,7 +1,7 @@
 const client = require('./client');
 
 // token can either be the X-Algo-API-Token string value or is a JS Object to allow setting multiple headers in the request
-// ex. 
+// ex.
 // const token = {
 //    'X-API-Key': 'SOME VALUE',
 //   'X-Algo-API-Token': 'ANOTHER VALUE'
@@ -179,6 +179,23 @@ function Algod(token = '', baseServer = "http://r2.algorand.network", port = 418
             }
         }
         return res.body;
+    };
+
+    /**
+     * suggestParams returns to common needed parameters for a new transaction, in a format the transaction builder expects
+     * @param headers, optional
+     * @returns {Object}
+     */
+    this.suggestParams = async function (headers={}) {
+        let result = await this.getTransactionParams(headers);
+        return {
+            "flatFee": false,
+            "fee": result.fee,
+            "firstRound": result.lastRound,
+            "lastRound": result.lastRound + 1000,
+            "genesisID": result.genesisID,
+            "genesisHash": result.genesishashb64,
+        };
     };
 
 }
