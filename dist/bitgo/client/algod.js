@@ -5,7 +5,7 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
 const client = require('./client'); // token can either be the X-Algo-API-Token string value or is a JS Object to allow setting multiple headers in the request
-// ex.
+// ex. 
 // const token = {
 //    'X-API-Key': 'SOME VALUE',
 //   'X-Algo-API-Token': 'ANOTHER VALUE'
@@ -276,32 +276,6 @@ function Algod(token = '', baseServer = "http://r2.algorand.network", port = 418
 
     return function (_x10) {
       return _ref13.apply(this, arguments);
-    };
-  }();
-  /**
-   * suggestParams returns to common needed parameters for a new transaction, in a format the transaction builder expects
-   * @param headers, optional
-   * @returns {Object}
-   */
-
-
-  this.suggestParams =
-  /*#__PURE__*/
-  function () {
-    var _ref14 = _asyncToGenerator(function* (headers = {}) {
-      let result = yield this.getTransactionParams(headers);
-      return {
-        "flatFee": false,
-        "fee": result.fee,
-        "firstRound": result.lastRound,
-        "lastRound": result.lastRound + 1000,
-        "genesisID": result.genesisID,
-        "genesisHash": result.genesishashb64
-      };
-    });
-
-    return function () {
-      return _ref14.apply(this, arguments);
     };
   }();
 }
