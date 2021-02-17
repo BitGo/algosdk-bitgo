@@ -85,6 +85,29 @@ describe('Sign', function () {
 
 
     });
+    
+    it('should generate non participating key reg transaction', function () {
+        let o = {
+            "from": "7ZUECA7HFLZTXENRV24SHLU4AVPUTMTTDUFUBNBD64C73F3UHRTHAIOF6Q",
+            "to": "7ZUECA7HFLZTXENRV24SHLU4AVPUTMTTDUFUBNBD64C73F3UHRTHAIOF6Q",
+            "fee": 10,
+            "firstRound": 51,
+            "lastRound": 61,
+            "note": new Uint8Array([123, 12, 200]),
+            "genesisHash": "JgsgCaCTqIaLeVhyL6XlRu3n7Rfk2FxMeK+wRSaQ7dI=",
+            "genesisID": "",
+            "type": "keyreg",
+            "nonParticipation": true
+        };
+
+        const txn = new transaction.Transaction(o);
+        const txnObj = txn.get_obj_for_encoding();
+
+        assert.equal(txnObj.type, "keyreg");
+        assert.equal(txnObj.nonpart, true);
+        assert(!("amt" in txnObj));
+
+    });
 
     describe('should correctly serialize and deserialize from msgpack representation', function () {
         it('should correctly serialize and deserialize from msgpack representation', function() {
