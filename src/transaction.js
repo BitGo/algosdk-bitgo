@@ -92,7 +92,7 @@ class Transaction {
         if (txnForEnc.close !== undefined) txn.closeRemainderTo = address.decode(address.encode(new Uint8Array(txnForEnc.close)));
         txn.genesisID = txnForEnc.gen;
         txn.genesisHash = txnForEnc.gh;
-        txn.nonParticipation = txnForEnc.nonpart;
+        if (txnForEnc.nonpart) txn.nonParticipation = txnForEnc.nonpart;
         return txn;
     }
 
