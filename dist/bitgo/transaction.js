@@ -76,6 +76,7 @@ class Transaction {
       "fee": this.fee,
       "fv": this.firstRound,
       "lv": this.lastRound,
+      "note": Buffer.from(this.note),
       "snd": Buffer.from(this.from.publicKey),
       "type": this.type,
       "gen": this.genesisID,
@@ -83,8 +84,7 @@ class Transaction {
     };
     if (!txn.type) txn.type = "pay";
     if (this.amount) txn.amt = this.amount;
-    if (this.note) txn.note = Buffer.from(this.note);
-    if (this.to) txn.rcv = Buffer.from(this.to.publicKey); // parse close address
+    if (this.type === "pay") txn.rcv = Buffer.from(this.to.publicKey); // parse close address
 
     if (this.closeRemainderTo !== undefined) txn.close = Buffer.from(this.closeRemainderTo.publicKey); // allowed zero values
 
@@ -109,12 +109,13 @@ class Transaction {
     txn.fee = txnForEnc.fee;
     txn.firstRound = txnForEnc.fv;
     txn.lastRound = txnForEnc.lv;
-    if (txnForEnc.note) txn.note = new Uint8Array(txnForEnc.note);
-    if (txnForEnc.rcv) txn.to = address.decode(address.encode(new Uint8Array(txnForEnc.rcv)));
+    txn.note = new Uint8Array(txnForEnc.note);
+    if (txnForEnc.type === "pay") txn.to = address.decode(address.encode(new Uint8Array(txnForEnc.rcv)));
     txn.from = address.decode(address.encode(new Uint8Array(txnForEnc.snd)));
     if (txnForEnc.close !== undefined) txn.closeRemainderTo = address.decode(address.encode(new Uint8Array(txnForEnc.close)));
     txn.genesisID = txnForEnc.gen;
     txn.genesisHash = txnForEnc.gh;
+    txn.type = txnForEnc.type;
     if (txnForEnc.nonpart) txn.nonParticipation = txnForEnc.nonpart;
     return txn;
   }
