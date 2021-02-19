@@ -11,12 +11,12 @@ const ALGORAND_MIN_TX_FEE = 1000; // version v5
  * Transaction enables construction of Algorand transactions
  * */
 class Transaction {
-    constructor({from, to, fee, amount, firstRound, lastRound, note, genesisID, genesisHash, closeRemainderTo}) {
+    constructor({from, to, fee, amount, firstRound, lastRound, note, genesisID, genesisHash, closeRemainderTo, type="pay", nonParticipation=false}) {
         this.name = "Transaction";
         this.tag = Buffer.from([84, 88]); // "TX"
 
         from = address.decode(from);
-        to = address.decode(to);
+        if (to !== undefined) to = address.decode(to);
 
         if (closeRemainderTo !== undefined) closeRemainderTo = address.decode(closeRemainderTo);
 
@@ -24,7 +24,7 @@ class Transaction {
 
         genesisHash = Buffer.from(genesisHash, 'base64');
 
-        if (!Number.isSafeInteger(amount) || amount < 0) throw Error("Amount must be a positive number and smaller than 2^53-1");
+        if (amount !== undefined && (!Number.isSafeInteger(amount) || amount < 0)) throw Error("Amount must be a positive number and smaller than 2^53-1");
         if (!Number.isSafeInteger(fee) || fee < 0) throw Error("fee must be a positive number and smaller than 2^53-1");
         if (!Number.isSafeInteger(firstRound) || firstRound < 0) throw Error("firstRound must be a positive number");
         if (!Number.isSafeInteger(lastRound) || lastRound < 0) throw Error("lastRound must be a positive number");
@@ -34,7 +34,7 @@ class Transaction {
         }
 
         Object.assign(this, {
-            from, to, fee, amount, firstRound, lastRound, note, genesisHash, genesisID, closeRemainderTo
+            from, to, fee, amount, firstRound, lastRound, note, genesisHash, genesisID, closeRemainderTo, type, nonParticipation
         });
 
         // Modify Fee
@@ -48,26 +48,31 @@ class Transaction {
 
     get_obj_for_encoding() {
         let txn = {
-            "amt": this.amount,
             "fee": this.fee,
             "fv": this.firstRound,
             "lv": this.lastRound,
             "note": Buffer.from(this.note),
-            "rcv": Buffer.from(this.to.publicKey),
             "snd": Buffer.from(this.from.publicKey),
-            "type": "pay",
+            "type": this.type,
             "gen": this.genesisID,
             "gh": this.genesisHash,
         };
+        if (!txn.type) txn.type = "pay";
+        if (this.amount) txn.amt = this.amount;
+        if (this.type === "pay") txn.rcv = Buffer.from(this.to.publicKey);
 
         // parse close address
         if (this.closeRemainderTo !== undefined) txn.close = Buffer.from(this.closeRemainderTo.publicKey);
 
         // allowed zero values
-        if (!txn.note.length) delete txn.note;
+        if (txn.note && !txn.note.length) delete txn.note;
         if (!txn.amt) delete txn.amt;
         if (!txn.fee) delete txn.fee;
         if (!txn.gen) delete txn.gen;
+
+        if (this.nonParticipation) {
+            txn.nonpart = true;
+        }
 
         return txn;
     }
@@ -82,11 +87,13 @@ class Transaction {
         txn.firstRound = txnForEnc.fv;
         txn.lastRound = txnForEnc.lv;
         txn.note = new Uint8Array(txnForEnc.note);
-        txn.to = address.decode(address.encode(new Uint8Array(txnForEnc.rcv)));
+        if (txnForEnc.type === "pay") txn.to = address.decode(address.encode(new Uint8Array(txnForEnc.rcv)));
         txn.from = address.decode(address.encode(new Uint8Array(txnForEnc.snd)));
         if (txnForEnc.close !== undefined) txn.closeRemainderTo = address.decode(address.encode(new Uint8Array(txnForEnc.close)));
         txn.genesisID = txnForEnc.gen;
         txn.genesisHash = txnForEnc.gh;
+        txn.type = txnForEnc.type;
+        if (txnForEnc.nonpart) txn.nonParticipation = txnForEnc.nonpart;
         return txn;
     }
 
